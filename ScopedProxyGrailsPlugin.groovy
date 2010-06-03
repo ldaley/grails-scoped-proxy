@@ -17,7 +17,6 @@ import grails.plugin.scopedproxy.TypeSpecifyableTransactionProxyFactoryBean
 
 import org.slf4j.LoggerFactory
 import org.springframework.aop.scope.ScopedProxyFactoryBean
-import org.springframework.transaction.interceptor.TransactionProxyFactoryBean
 import org.codehaus.groovy.grails.orm.support.GroovyAwareNamedTransactionAttributeSource
 
 class ScopedProxyGrailsPlugin {
