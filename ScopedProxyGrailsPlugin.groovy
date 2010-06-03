@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import grails.plugin.scopedproxy.TypeSpecifyableTransactionProxyFactoryBean
+import grails.plugin.scopedproxy.*
 
 import org.slf4j.LoggerFactory
 import org.springframework.aop.scope.ScopedProxyFactoryBean
@@ -45,7 +45,7 @@ class ScopedProxyGrailsPlugin {
 				if (log.debugEnabled) {
 					log.debug("creating proxy for service class '$serviceClass.clazz.name', with name '$proxyBeanName'")
 				}
-				buildProxyWithName(delegate, serviceClass, proxyBeanName)
+				buildProxyWithName(delegate, serviceClass, proxyBeanName, application.classLoader)
 			}
 		}
 	}
@@ -59,12 +59,12 @@ class ScopedProxyGrailsPlugin {
 				if (log.debugEnabled) {
 					log.debug("re-configuring proxy for service class '$serviceClass.clazz.name', with name '$proxyBeanName'")
 				}
-				beans { buildProxyWithName(delegate, serviceClass, proxyBeanName) }.registerBeans(event.ctx)
+				beans { buildProxyWithName(delegate, serviceClass, proxyBeanName, application.classLoader) }.registerBeans(event.ctx)
 			}
 		}
 	}
 	
-	static buildProxyWithName(beanBuilder, serviceClass, proxyBeanName) {
+	static buildProxyWithName(beanBuilder, serviceClass, proxyBeanName, classLoader) {
 		beanBuilder.with {
 			def serviceBeanName = serviceClass.propertyName
 			def scope = getScope(serviceClass)
@@ -87,9 +87,10 @@ class ScopedProxyGrailsPlugin {
 				}
 			}
 			
-			"$proxyBeanName"(ScopedProxyFactoryBean) {
+			"$proxyBeanName"(ClassLoaderConfigurableScopedProxyFactoryBean) {
 				targetBeanName = serviceBeanName
 				proxyTargetClass = true
+				delegate.classLoader = classLoader
 			}
 		}
 	}
