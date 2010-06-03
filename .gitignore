@@ -3,3 +3,4 @@ stacktrace.log
 target
 *.zip
 docs
+.DS_Store
