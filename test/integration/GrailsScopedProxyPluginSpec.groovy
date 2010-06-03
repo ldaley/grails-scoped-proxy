@@ -3,7 +3,7 @@ import spock.lang.*
 
 import org.codehaus.groovy.grails.plugins.PluginManagerHolder
 
-class GrailsScopeProxyPluginSpec extends IntegrationSpec {
+class GrailsScopedProxyPluginSpec extends IntegrationSpec {
 
 	def grailsApplication
 	
