@@ -34,7 +34,7 @@ class ScopedProxyGrailsPlugin {
 	def authorEmail = "ld@ldaley.com"
 	def title = "Scoped Proxy Plugin"
 	def description = 'Creates proxies for scoped services by convention'
-	def documentation = "http://grails.org/plugin/scoped-proxy"
+	def documentation = "http://github.com/alkemist/grails-scoped-proxy"
 
 	static PROXY_BEAN_SUFFIX = 'Proxy'
 
