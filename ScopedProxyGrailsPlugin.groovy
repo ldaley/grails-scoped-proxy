@@ -21,7 +21,7 @@ import org.codehaus.groovy.grails.orm.support.GroovyAwareNamedTransactionAttribu
 
 class ScopedProxyGrailsPlugin {
 	
-	def version = "0.1-SNAPSHOT"
+	def version = "0.1"
 	def grailsVersion = "1.2.0 > *"
 	def dependsOn = [:]
 	def observe = ["services"]
