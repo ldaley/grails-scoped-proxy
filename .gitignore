@@ -1,3 +1,5 @@
 plugin.xml
 stacktrace.log
 target
+*.zip
+docs
