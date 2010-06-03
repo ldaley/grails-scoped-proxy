@@ -32,6 +32,12 @@ class GrailsScopedProxyPluginSpec extends IntegrationSpec {
 		getProxyForService('nonProxyableScopedService') != null
 
 		when:
+		PluginManagerHolder.pluginManager.informOfClassChange(NonProxyableScopedService)
+		
+		then:
+		getProxyForService('nonProxyableScopedService') != null
+
+		when:
 		NonProxyableScopedService.proxy = false
 		PluginManagerHolder.pluginManager.informOfClassChange(NonProxyableScopedService)
 		
