@@ -39,22 +39,24 @@ class ScopedProxyGrailsPlugin {
 	def onChange = { event ->
 		if (application.isServiceClass(event.source)) {
 			def serviceClass = application.getServiceClass(event.source.name)
+			def proxyBeanName = getProxyBeanName(serviceClass)
+			removeProxyIfExists(application.mainContext, serviceClass, proxyBeanName)
+
 			if (wantsProxy(serviceClass)) {
-				def proxyBeanName = getProxyBeanName(serviceClass)
 				if (log.debugEnabled) {
 					log.debug("re-configuring proxy for service class '$serviceClass.clazz.name', with name '$proxyBeanName'")
 				}
-				removeBeanIfExists(proxyBeanName, application)
-				beans {
-					buildProxyWithName(delegate, serviceClass, proxyBeanName)
-				}
+				beans { buildProxyWithName(delegate, serviceClass, proxyBeanName) }.registerBeans(event.ctx)
 			}
 		}
 	}
 	
-	static removeBeanIfExists(beanName, context) {
-		if (context.containsBean(beanName)) {
-			context.removeBeanDefinition(beanName)
+	static removeProxyIfExists(context, serviceClass, proxyBeanName) {
+		if (context.containsBean(proxyBeanName)) {
+			if (log.debugEnabled) {
+				log.debug("removing proxy for service class '$serviceClass.clazz.name', with name '$proxyBeanName'")
+			}
+			context.removeBeanDefinition(proxyBeanName)
 		}
 	}
 	
