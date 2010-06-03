@@ -84,3 +84,7 @@ Currently, integration tests are autowired out of a request context. This means 
     }
     
 The above test **will pass** because the actual underlying `cartService` that the `cartServiceProxy` delegates to in `testAdd1()` and `testAdd2()` are different.
+
+### Hot Reloading
+
+You don't need to restart your app to use a new proxy. That is, if you have a scoped service that is not proxied and you add `static proxy = true` to it, a proxy will be created without a restart which you can then use.
