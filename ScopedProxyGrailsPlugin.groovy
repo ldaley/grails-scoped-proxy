@@ -105,9 +105,5 @@ class ScopedProxyGrailsPlugin {
 		serviceClass.propertyName + PROXY_BEAN_SUFFIX
 	}
 
-	static getWrapperBeanName(serviceClass) {
-		serviceClass.propertyName + WRAPPER_BEAN_SUFFIX
-	}
-	
 	private static final log = LoggerFactory.getLogger("grails.plugin.scopedproxy.ScopedProxyGrailsPlugin")
 }
