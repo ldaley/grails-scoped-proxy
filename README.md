@@ -1,5 +1,7 @@
 # Scoped Proxy Plugin
 
+Version: 0.1
+
 The _scoped-proxy_ plugin allows you to easily create proxies for scoped services.
 
 This allows you to use your scoped services from objects in a larger scope.
@@ -49,11 +51,17 @@ TagLibs on the other hand are of singleton scope and therefore exist outside of 
     
 At execution time, calls to `cartServiceProxy` are delegated to the _actual session bound_ `cartService` instance for the request. 
 
-## Transactions
+## Installation
+
+    grails install-plugin scoped-proxy
+
+## Other Stuff
+
+### Transactions
 
 Transactional services are fully supported. That is, proxies of transactional scoped services share the same transactional semantics as usual.
 
-## Testing
+### Testing
 
 Scoped proxies are only relevant to integration testing.
 
