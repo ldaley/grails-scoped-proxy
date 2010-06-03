@@ -2,6 +2,7 @@ import grails.plugin.spock.*
 import spock.lang.*
 
 import org.codehaus.groovy.grails.plugins.PluginManagerHolder
+import org.codehaus.groovy.grails.test.support.GrailsTestRequestEnvironmentInterceptor
 
 class GrailsScopedProxyPluginSpec extends IntegrationSpec {
 
@@ -45,6 +46,22 @@ class GrailsScopedProxyPluginSpec extends IntegrationSpec {
 		getProxyForService('nonProxyableScopedService') == null
 	}
 
+
+	void proxyActuallyAccessingDifferentObjectsWhenScopeChanges() {
+		given: "a request scoped proxy"
+		def proxy = getProxyForService('nonTransactionalProxyableScopedService')
+		
+		when: "a var is set to a value"
+		proxy.var = 5
+		then: "it is read as the same value"
+		proxy.var == 5
+		
+		when: "working on a different request"
+		simulateNewRequest()
+		then: "the value is different when accessed throught the same proxy"
+		proxy.var == 0
+	}
+	
 	protected getProxyForService(serviceBeanName) {
 		grailsApplication.mainContext[getProxyNameForService(serviceBeanName)]
 	}
@@ -55,5 +72,11 @@ class GrailsScopedProxyPluginSpec extends IntegrationSpec {
 	
 	protected reload(clazz) {
 		PluginManagerHolder.pluginManager.informOfClassChange(clazz)
+	}
+	
+	protected simulateNewRequest() {
+		def i = new GrailsTestRequestEnvironmentInterceptor(grailsApplication.mainContext)
+		i.destroy()
+		i.init()
 	}
 }
