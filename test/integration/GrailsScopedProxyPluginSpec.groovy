@@ -3,10 +3,14 @@ import spock.lang.*
 
 import org.codehaus.groovy.grails.plugins.PluginManagerHolder
 import org.codehaus.groovy.grails.test.support.GrailsTestRequestEnvironmentInterceptor
+import org.springframework.transaction.interceptor.TransactionAspectSupport
 
 class GrailsScopedProxyPluginSpec extends IntegrationSpec {
 
+	static transactional = false
+	
 	def grailsApplication
+	def sessionFactory
 	
 	@Unroll("proxy was created for '#name' = #created")
 	void proxyGeneration() {
@@ -62,6 +66,42 @@ class GrailsScopedProxyPluginSpec extends IntegrationSpec {
 		proxy.var == 0
 	}
 	
+	void proxiesOfTransactionalServicesAreTransactional() {
+		given: "a transactional proxy and a non-transactional proxy"
+		def transactionalProxy = grailsApplication.mainContext['transactionalProxyableScopedService']
+		def nonTransactionalProxy = getProxyForService('nonTransactionalProxyableScopedService')
+		
+		and: "we are not running inside a transaction"
+		isInTransaction() == false
+		
+		when: "a method is called on a non transactional proxy"
+		def wasInTransaction = true // true just to verify closure below gets invoked
+		nonTransactionalProxy.call {
+			wasInTransaction = isInTransaction()
+		}
+		
+		then: "it does NOT operate inside a transaction"
+		wasInTransaction == false
+		
+		when: "a method is called on a transactional proxy"
+		wasInTransaction = false
+		transactionalProxy.call {
+			wasInTransaction = isInTransaction()
+		}
+		
+		then: "it does operate inside a transaction"
+		wasInTransaction == true
+	}
+	
+	protected isInTransaction() {
+		try {
+			TransactionAspectSupport.currentTransactionStatus()
+			true
+		} catch (Exception e) {
+			false
+		}
+	}
+		
 	protected getProxyForService(serviceBeanName) {
 		grailsApplication.mainContext[getProxyNameForService(serviceBeanName)]
 	}

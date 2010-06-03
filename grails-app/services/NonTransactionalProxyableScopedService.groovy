@@ -3,4 +3,8 @@ class NonTransactionalProxyableScopedService {
 	static proxy = true
 	static transactional = false
 	def var = 0
+	
+	def call(closure) {
+		closure()
+	}
 }
