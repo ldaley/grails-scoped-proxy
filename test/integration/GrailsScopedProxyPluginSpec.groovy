@@ -21,27 +21,27 @@ class GrailsScopedProxyPluginSpec extends IntegrationSpec {
 	}
 
 	void classReloading() {
-		expect:
+		expect: "there is no proxy"
 		getProxyForService('nonProxyableScopedService') == null
 		
-		when:
+		when: "the proxy flag is set to true and the service is reloaded"
 		NonProxyableScopedService.proxy = true
 		PluginManagerHolder.pluginManager.informOfClassChange(NonProxyableScopedService)
 		
-		then:
+		then: "there is a proxy"
 		getProxyForService('nonProxyableScopedService') != null
 
-		when:
+		when: "the service is reloaded (without changing the proxy flag)"
 		PluginManagerHolder.pluginManager.informOfClassChange(NonProxyableScopedService)
 		
-		then:
+		then: "there is still a proxy"
 		getProxyForService('nonProxyableScopedService') != null
 
-		when:
+		when: "the proxy flag back is changed to false and the service is reloaded"
 		NonProxyableScopedService.proxy = false
 		PluginManagerHolder.pluginManager.informOfClassChange(NonProxyableScopedService)
 		
-		then:
+		then: "there is no longer a proxy"
 		getProxyForService('nonProxyableScopedService') == null
 	}
 
