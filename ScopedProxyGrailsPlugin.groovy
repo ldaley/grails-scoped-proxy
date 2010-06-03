@@ -23,7 +23,6 @@ class ScopedProxyGrailsPlugin {
 	def documentation = "http://grails.org/plugin/scoped-proxy"
 
 	static PROXY_BEAN_SUFFIX = 'Proxy'
-	static WRAPPER_BEAN_SUFFIX = 'Wrapper'
 
 	def doWithSpring = {
 		for (serviceClass in application.serviceClasses) {
