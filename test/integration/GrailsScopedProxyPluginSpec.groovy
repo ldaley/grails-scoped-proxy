@@ -51,20 +51,11 @@ class GrailsScopedProxyPluginSpec extends IntegrationSpec {
 		then: "there is a proxy"
 		getProxyForService('nonProxyableScopedService').var == 0
 
-		when: "the service is reloaded (without changing the proxy flag)"
-		reload(NonProxyableScopedService)
-		
-		then: "there is still a proxy"
-		getProxyForService('nonProxyableScopedService').var == 0
-
-		when: "the proxy flag back is changed to false and the service is reloaded"
+		cleanup:
 		NonProxyableScopedService.proxy = false
-		reload(NonProxyableScopedService)
-		
-		then: "there is no longer a proxy"
-		getProxyForService('nonProxyableScopedService') == null
+		grailsApplication.mainContext.removeBeanDefinition(getProxyNameForService('nonProxyableScopedService'))
+		assert getProxyForService('nonProxyableScopedService') == null
 	}
-
 
 	void proxyActuallyAccessingDifferentObjectsWhenScopeChanges() {
 		given: "a request scoped proxy"
