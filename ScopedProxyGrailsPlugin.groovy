@@ -137,7 +137,7 @@ class ScopedProxyGrailsPlugin {
 		beanBuilder.with {
 			"$proxyBeanName"(ClassLoaderConfigurableScopedProxyFactoryBean, targetClass) {
 				delegate.targetBeanName = targetBeanName
-				delegate.classLoader = classLoader
+				delegate.classLoader = wrapInSmartClassLoader(classLoader)
 				proxyTargetClass = true
 			}
 		}
@@ -182,6 +182,10 @@ class ScopedProxyGrailsPlugin {
 
 	static getProxyBeanName(beanName) {
 		beanName + PROXY_BEAN_SUFFIX
+	}
+
+	static wrapInSmartClassLoader(ClassLoader classLoader) {
+		new AlwaysReloadableSmartClassLoader(classLoader)
 	}
 
 	private static final log = LoggerFactory.getLogger("grails.plugin.scopedproxy.ScopedProxyGrailsPlugin")
