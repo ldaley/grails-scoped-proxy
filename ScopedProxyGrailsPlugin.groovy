@@ -107,7 +107,6 @@ class ScopedProxyGrailsPlugin {
 		if (log.debugEnabled) {
 			log.debug("redefining transactional proxy for '$targetBeanName'")
 		}
-		println "targetClass for $targetBeanName is $serviceClass"
 
 		beanBuilder.with {
 			def props = new Properties()
@@ -133,7 +132,6 @@ class ScopedProxyGrailsPlugin {
 
 
 	static buildProxy(beanBuilder, classLoader, targetBeanName, targetClass, proxyBeanName) {
-		println "targetClass for $targetBeanName is $targetClass"
 		beanBuilder.with {
 			"$proxyBeanName"(ClassLoaderConfigurableScopedProxyFactoryBean, targetClass) {
 				delegate.targetBeanName = targetBeanName
