@@ -22,7 +22,7 @@ import org.codehaus.groovy.grails.commons.ClassPropertyFetcher
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
 
 class ScopedProxyGrailsPlugin {
-	
+
 	def version = "0.1.1-SNAPSHOT"
 	def grailsVersion = "1.2.0 > *"
 	def dependsOn = [:]
@@ -39,7 +39,6 @@ class ScopedProxyGrailsPlugin {
 	def documentation = "http://github.com/alkemist/grails-scoped-proxy"
 
 	static PROXY_BEAN_SUFFIX = 'Proxy'
-	
 
 	def doWithSpring = {
 		for (serviceClass in application.serviceClasses) {
@@ -52,27 +51,27 @@ class ScopedProxyGrailsPlugin {
 			def classLoader = application.classLoader
 			def serviceClass = application.getServiceClass(event.source.name)
 			def newClass = classLoader.loadClass(event.source.name, false)
-			
+
 			if (log.debugEnabled) {
 				log.debug("handling change of service class '$newClass.name'")
 			}
-			
+
 			def didBuildProxy = false
 			def beanDefinitions = beans {
 				didBuildProxy = buildServiceProxyIfNecessary(delegate, classLoader, newClass)
 			}
-			
+
 			if (didBuildProxy) {
 				beanDefinitions.registerBeans(event.ctx)
 			}
 		}
 	}
-	
+
 	static private buildServiceProxyIfNecessary(beanBuilder, classLoader, serviceClass) {
 		def propertyFetcher = createPropertyFetcher(serviceClass)
 		def wantsProxy = wantsProxy(propertyFetcher)
 		def scope = getScope(propertyFetcher)
-		
+
 		if (wantsProxy) {
 			if (log.debugEnabled) {
 				log.debug("service class '$serviceClass.name' DOES want a proxy")
@@ -83,7 +82,7 @@ class ScopedProxyGrailsPlugin {
 				}
 				scope = "singleton"
 			}
-			
+
 			if (isTransactional(propertyFetcher)) {
 				buildTransactionalServiceProxy(beanBuilder, classLoader, serviceClass, scope)
 			} else {
@@ -94,22 +93,22 @@ class ScopedProxyGrailsPlugin {
 				log.debug("service class '$serviceClass.name' DOES NOT want a proxy")
 			}
 		}
-		
+
 		wantsProxy
 	}
-	
+
 	static private buildServiceProxy(beanBuilder, classLoader, serviceClass) {
 		def targetBeanName = GrailsClassUtils.getPropertyName(serviceClass)
 		buildProxy(beanBuilder, classLoader, targetBeanName, serviceClass, getProxyBeanName(targetBeanName))
 	}
-	
+
 	static private buildTransactionalServiceProxy(beanBuilder, classLoader, serviceClass, scope) {
 		def targetBeanName = GrailsClassUtils.getPropertyName(serviceClass)
 		if (log.debugEnabled) {
 			log.debug("redefining transactional proxy for '$targetBeanName'")
 		}
 		println "targetClass for $targetBeanName is $serviceClass"
-		
+
 		beanBuilder.with {
 			def props = new Properties()
 			props."*" = "PROPAGATION_REQUIRED"
@@ -128,11 +127,11 @@ class ScopedProxyGrailsPlugin {
 				transactionManager = ref("transactionManager")
 			}
 		}
-		
+
 		buildServiceProxy(beanBuilder, classLoader, serviceClass)
 	}
-	
-	
+
+
 	static buildProxy(beanBuilder, classLoader, targetBeanName, targetClass, proxyBeanName) {
 		println "targetClass for $targetBeanName is $targetClass"
 		beanBuilder.with {
@@ -147,7 +146,7 @@ class ScopedProxyGrailsPlugin {
 	static wantsProxy(Class clazz) {
 		wantsProxy(createPropertyFetcher(clazz))
 	}
-	
+
 	static wantsProxy(ClassPropertyFetcher propertyFetcher) {
 		propertyFetcher.getPropertyValue("proxy") == true
 	}
@@ -159,28 +158,28 @@ class ScopedProxyGrailsPlugin {
 	static getScope(ClassPropertyFetcher propertyFetcher) {
 		propertyFetcher.getPropertyValue("scope")
 	}
-	
+
 	static isScoped(Class clazz) {
 		isScoped(createPropertyFetcher(clazz))
 	}
-	
+
 	static isScoped(ClassPropertyFetcher propertyFetcher) {
 		getScope(propertyFetcher) != null
 	}
-	
+
 	static isTransactional(Class clazz) {
 		isTransactional(createPropertyFetcher(clazz))
 	}
-	
+
 	static isTransactional(ClassPropertyFetcher propertyFetcher) {
 		def transactional = propertyFetcher.getPropertyValue('transactional')
 		transactional == null || transactional != false
 	}
-	
+
 	static createPropertyFetcher(clazz) {
 		new ClassPropertyFetcher(clazz, [getReferenceInstance: { -> clazz.newInstance() }] as ClassPropertyFetcher.ReferenceInstanceCallback)
 	}
-	
+
 	static getProxyBeanName(beanName) {
 		beanName + PROXY_BEAN_SUFFIX
 	}
