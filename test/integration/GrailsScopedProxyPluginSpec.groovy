@@ -34,8 +34,8 @@ class GrailsScopedProxyPluginSpec extends IntegrationSpec {
 		
 		where:
 		name | created
-		'proxyableNonScopedService' | false
 		'nonProxyableScopedService' | false
+		'proxyableNonScopedService' | true
 		'transactionalProxyableScopedService' | true
 		'nonTransactionalProxyableScopedService' | true
 	}

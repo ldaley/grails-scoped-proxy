@@ -39,6 +39,7 @@ import org.springframework.beans.factory.InitializingBean
 class ClassLoaderConfigurableScopedProxyFactoryBean extends ProxyConfig implements FactoryBean, BeanFactoryAware, InitializingBean {
 
 	ClassLoader classLoader
+	Class type
 	
 	/** The TargetSource that manages scoping */
 	private final SimpleBeanTargetSource scopedTargetSource = new SimpleBeanTargetSource()
@@ -52,7 +53,8 @@ class ClassLoaderConfigurableScopedProxyFactoryBean extends ProxyConfig implemen
 	/**
 	 * Create a new ScopedProxyFactoryBean instance.
 	 */
-	ClassLoaderConfigurableScopedProxyFactoryBean() {
+	ClassLoaderConfigurableScopedProxyFactoryBean(Class type) {
+		this.type = type
 		setProxyTargetClass(true)
 	}
 
@@ -82,13 +84,8 @@ class ClassLoaderConfigurableScopedProxyFactoryBean extends ProxyConfig implemen
 		pf.copyFrom(this)
 		pf.setTargetSource(this.scopedTargetSource)
 
-		Class beanType = beanFactory.getType(this.targetBeanName)
-		if (beanType == null) {
-			throw new IllegalStateException("Cannot create scoped proxy for bean '" + this.targetBeanName +
-					"': Target type could not be determined at the time of proxy creation.")
-		}
-		if (!isProxyTargetClass() || beanType.isInterface() || Modifier.isPrivate(beanType.getModifiers())) {
-			pf.setInterfaces(ClassUtils.getAllInterfacesForClass(beanType, this.classLoader))
+		if (!isProxyTargetClass() || type.isInterface() || Modifier.isPrivate(type.getModifiers())) {
+			pf.setInterfaces(ClassUtils.getAllInterfacesForClass(type, this.classLoader))
 		}
 
 		// Add an introduction that implements only the methods on ScopedObject.
@@ -111,13 +108,7 @@ class ClassLoaderConfigurableScopedProxyFactoryBean extends ProxyConfig implemen
 	}
 
 	public Class<?> getObjectType() {
-		if (this.proxy != null) {
-			return this.proxy.getClass()
-		}
-		if (this.scopedTargetSource != null) {
-			return this.scopedTargetSource.getTargetClass()
-		}
-		return null
+		this.type
 	}
 
 	public boolean isSingleton() {

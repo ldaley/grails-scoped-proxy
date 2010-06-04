@@ -18,6 +18,8 @@ import grails.plugin.scopedproxy.*
 import org.slf4j.LoggerFactory
 import org.springframework.aop.scope.ScopedProxyFactoryBean
 import org.codehaus.groovy.grails.orm.support.GroovyAwareNamedTransactionAttributeSource
+import org.codehaus.groovy.grails.commons.ClassPropertyFetcher
+import org.codehaus.groovy.grails.commons.GrailsClassUtils
 
 class ScopedProxyGrailsPlugin {
 	
@@ -37,78 +39,150 @@ class ScopedProxyGrailsPlugin {
 	def documentation = "http://github.com/alkemist/grails-scoped-proxy"
 
 	static PROXY_BEAN_SUFFIX = 'Proxy'
+	
 
 	def doWithSpring = {
 		for (serviceClass in application.serviceClasses) {
-			if (wantsProxy(serviceClass)) {
-				def proxyBeanName = getProxyBeanName(serviceClass)
-				if (log.debugEnabled) {
-					log.debug("creating proxy for service class '$serviceClass.clazz.name', with name '$proxyBeanName'")
-				}
-				buildProxyWithName(delegate, serviceClass, proxyBeanName, application.classLoader)
-			}
+			buildServiceProxyIfNecessary(delegate, application.classLoader, serviceClass.clazz)
 		}
 	}
 
 	def onChange = { event ->
 		if (application.isServiceClass(event.source)) {
+			def classLoader = application.classLoader
 			def serviceClass = application.getServiceClass(event.source.name)
-			def proxyBeanName = getProxyBeanName(serviceClass)
-
-			if (wantsProxy(serviceClass)) {
-				if (log.debugEnabled) {
-					log.debug("re-configuring proxy for service class '$serviceClass.clazz.name', with name '$proxyBeanName'")
-				}
-				beans { buildProxyWithName(delegate, serviceClass, proxyBeanName, application.classLoader) }.registerBeans(event.ctx)
-			}
-		}
-	}
-	
-	static buildProxyWithName(beanBuilder, serviceClass, proxyBeanName, classLoader) {
-		beanBuilder.with {
-			def serviceBeanName = serviceClass.propertyName
-			def scope = getScope(serviceClass)
-			if (serviceClass.transactional) {
-				def props = new Properties()
-				props."*" = "PROPAGATION_REQUIRED"
-				"${serviceBeanName}"(TypeSpecifyableTransactionProxyFactoryBean, serviceClass.clazz) { bean ->
-					bean.scope = scope
-					bean.lazyInit = true
-					target = { innerBean ->
-						innerBean.lazyInit = true
-						innerBean.factoryBean = "${serviceClass.fullName}ServiceClass"
-						innerBean.factoryMethod = "newInstance"
-						innerBean.autowire = "byName"
-						innerBean.scope = scope
-					}
-					proxyTargetClass = true
-					transactionAttributeSource = new GroovyAwareNamedTransactionAttributeSource(transactionalAttributes:props)
-					transactionManager = ref("transactionManager")
-				}
+			def newClass = classLoader.loadClass(event.source.name, false)
+			
+			if (log.debugEnabled) {
+				log.debug("handling change of service class '$newClass.name'")
 			}
 			
-			"$proxyBeanName"(ClassLoaderConfigurableScopedProxyFactoryBean) {
-				targetBeanName = serviceBeanName
+			def didBuildProxy = false
+			def beanDefinitions = beans {
+				didBuildProxy = buildServiceProxyIfNecessary(delegate, classLoader, newClass)
+			}
+			
+			if (didBuildProxy) {
+				beanDefinitions.registerBeans(event.ctx)
+			}
+		}
+	}
+	
+	static private buildServiceProxyIfNecessary(beanBuilder, classLoader, serviceClass) {
+		def propertyFetcher = createPropertyFetcher(serviceClass)
+		def wantsProxy = wantsProxy(propertyFetcher)
+		def scope = getScope(propertyFetcher)
+		
+		if (wantsProxy) {
+			if (log.debugEnabled) {
+				log.debug("service class '$serviceClass.name' DOES want a proxy")
+			}
+			if (!scope) {
+				if (log.debugEnabled) {
+					log.debug("service class '$serviceClass.name' does NOT define a scope, defaulting to 'singleton'")
+				}
+				scope = "singleton"
+			}
+			
+			if (isTransactional(propertyFetcher)) {
+				buildTransactionalServiceProxy(beanBuilder, classLoader, serviceClass, scope)
+			} else {
+				buildServiceProxy(beanBuilder, classLoader, serviceClass)
+			}
+		} else {
+			if (log.debugEnabled) {
+				log.debug("service class '$serviceClass.name' DOES NOT want a proxy")
+			}
+		}
+		
+		wantsProxy
+	}
+	
+	static private buildServiceProxy(beanBuilder, classLoader, serviceClass) {
+		def targetBeanName = GrailsClassUtils.getPropertyName(serviceClass)
+		buildProxy(beanBuilder, classLoader, targetBeanName, serviceClass, getProxyBeanName(targetBeanName))
+	}
+	
+	static private buildTransactionalServiceProxy(beanBuilder, classLoader, serviceClass, scope) {
+		def targetBeanName = GrailsClassUtils.getPropertyName(serviceClass)
+		if (log.debugEnabled) {
+			log.debug("redefining transactional proxy for '$targetBeanName'")
+		}
+		println "targetClass for $targetBeanName is $serviceClass"
+		
+		beanBuilder.with {
+			def props = new Properties()
+			props."*" = "PROPAGATION_REQUIRED"
+			"${targetBeanName}"(TypeSpecifyableTransactionProxyFactoryBean, serviceClass) { bean ->
+				bean.scope = scope
+				bean.lazyInit = true
+				target = { innerBean ->
+					innerBean.lazyInit = true
+					innerBean.factoryBean = "${serviceClass.name}ServiceClass"
+					innerBean.factoryMethod = "newInstance"
+					innerBean.autowire = "byName"
+					innerBean.scope = scope
+				}
 				proxyTargetClass = true
+				transactionAttributeSource = new GroovyAwareNamedTransactionAttributeSource(transactionalAttributes: props)
+				transactionManager = ref("transactionManager")
+			}
+		}
+		
+		buildServiceProxy(beanBuilder, classLoader, serviceClass)
+	}
+	
+	
+	static buildProxy(beanBuilder, classLoader, targetBeanName, targetClass, proxyBeanName) {
+		println "targetClass for $targetBeanName is $targetClass"
+		beanBuilder.with {
+			"$proxyBeanName"(ClassLoaderConfigurableScopedProxyFactoryBean, targetClass) {
+				delegate.targetBeanName = targetBeanName
 				delegate.classLoader = classLoader
+				proxyTargetClass = true
 			}
 		}
 	}
 
-	static wantsProxy(serviceClass) {
-		isScoped(serviceClass) && serviceClass.getPropertyValue('proxy') == true
+	static wantsProxy(Class clazz) {
+		wantsProxy(createPropertyFetcher(clazz))
 	}
 	
-	static getScope(serviceClass) {
-		serviceClass.getPropertyValue("scope")
+	static wantsProxy(ClassPropertyFetcher propertyFetcher) {
+		propertyFetcher.getPropertyValue("proxy") == true
 	}
 
-	static isScoped(serviceClass) {
-		getScope(serviceClass) != null
+	static getScope(Class clazz) {
+		getScope(createPropertyFetcher(clazz))
+	}
+
+	static getScope(ClassPropertyFetcher propertyFetcher) {
+		propertyFetcher.getPropertyValue("scope")
 	}
 	
-	static getProxyBeanName(serviceClass) {
-		serviceClass.propertyName + PROXY_BEAN_SUFFIX
+	static isScoped(Class clazz) {
+		isScoped(createPropertyFetcher(clazz))
+	}
+	
+	static isScoped(ClassPropertyFetcher propertyFetcher) {
+		getScope(propertyFetcher) != null
+	}
+	
+	static isTransactional(Class clazz) {
+		isTransactional(createPropertyFetcher(clazz))
+	}
+	
+	static isTransactional(ClassPropertyFetcher propertyFetcher) {
+		def transactional = propertyFetcher.getPropertyValue('transactional')
+		transactional == null || transactional != false
+	}
+	
+	static createPropertyFetcher(clazz) {
+		new ClassPropertyFetcher(clazz, [getReferenceInstance: { -> clazz.newInstance() }] as ClassPropertyFetcher.ReferenceInstanceCallback)
+	}
+	
+	static getProxyBeanName(beanName) {
+		beanName + PROXY_BEAN_SUFFIX
 	}
 
 	private static final log = LoggerFactory.getLogger("grails.plugin.scopedproxy.ScopedProxyGrailsPlugin")
