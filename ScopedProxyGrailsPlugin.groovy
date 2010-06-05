@@ -49,7 +49,10 @@ class ScopedProxyGrailsPlugin {
 			buildServiceProxyIfNecessary(delegate, application.classLoader, serviceClass.clazz)
 		}
 		
-		"reloadedScopedBeanSessionPurger"(ReloadedScopedBeanSessionPurger)
+		if (isEnvironmentClassReloadable()) {
+			"reloadedScopedBeanSessionPurger"(ReloadedScopedBeanSessionPurger)
+		}
+		
 	}
 
 	def doWithWebDescriptor = { webXml ->
