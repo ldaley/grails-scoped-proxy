@@ -55,6 +55,10 @@ At execution time, calls to `cartServiceProxy` are delegated to the _actual sess
 
     grails install-plugin scoped-proxy
 
+## Logging
+
+All logging occurs under the `grails.plugin.scopedproxy` namespace.
+
 ## Transactions
 
 Transactional services are fully supported. That is, proxies of transactional scoped services share the same transactional semantics as usual.
