@@ -96,7 +96,7 @@ class ScopedProxyGrailsPlugin {
 		}
 	}
 
-	protected informListenersOfReload(application, beanName, scope, proxyBeanName) {
+	static informListenersOfReload(application, beanName, scope, proxyBeanName) {
 		def listeners = application.mainContext.getBeansOfType(ScopedBeanReloadListener)
 		if (listeners) {
 			listeners.each { listenerName, listener ->
