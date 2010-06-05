@@ -20,7 +20,7 @@ import org.codehaus.groovy.grails.plugins.PluginManagerHolder
 import org.codehaus.groovy.grails.test.support.GrailsTestRequestEnvironmentInterceptor
 import org.springframework.transaction.interceptor.TransactionAspectSupport
 
-class GrailsScopedProxyPluginSpec extends IntegrationSpec {
+class ScopedProxyGrailsPluginSpec extends IntegrationSpec {
 
 	static transactional = false
 	
