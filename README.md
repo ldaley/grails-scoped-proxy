@@ -55,13 +55,11 @@ At execution time, calls to `cartServiceProxy` are delegated to the _actual sess
 
     grails install-plugin scoped-proxy
 
-## Other Stuff
-
-### Transactions
+## Transactions
 
 Transactional services are fully supported. That is, proxies of transactional scoped services share the same transactional semantics as usual.
 
-### Testing
+## Testing
 
 Scoped proxies are only relevant to integration testing.
 
@@ -85,6 +83,77 @@ Currently, integration tests are autowired out of a request context. This means 
     
 The above test **will pass** because the actual underlying `cartService` that the `cartServiceProxy` delegates to in `testAdd1()` and `testAdd2()` are different.
 
-### Hot Reloading
+## Hot Reloading
 
-You don't need to restart your app to use a new proxy. That is, if you have a scoped service that is not proxied and you add `static proxy = true` to it, a proxy will be created without a restart which you can then use.
+This plugin adds explicit support for hot reloading of scoped services during development. This does mean however that when a _session_ scoped bean class is reloaded, all instances of that service class are removed from all active sessions. Depending on your application, the consequences of this will be different.
+
+This is necessary to avoid `ClassCastException`s where a new proxy based on the new class encounters an old bean based on the old class.
+
+### Supporting Reloading With Custom Scopes
+
+If you are using a custom scope in your application, you may need to do some extra work to support reloading.
+
+#### Session Based Scopes
+
+For scopes that are inherently session based (i.e. live inside a session lifecycle), you _can_ (though it may not be best to) plugin into the existing session purging mechanism by registering your scope with the `reloadedScopedBeanSessionPurger` bean in the application context.
+
+    import org.springframework.web.context.request.SessionScope
+    import org.springframework.beans.factory.InitializingBean
+    
+    class CustomSessionBasedScope extends SessionScope, InitializingBean {
+        static String SCOPE_NAME = 'custom'
+        def reloadedScopedBeanSessionPurger // autowired
+        
+        void afterPropertiesSet() {
+            // reloadedScopedBeanSessionPurger is only present in environments
+            // that support class reloading, hence the null check.
+            reloadedScopedBeanSessionPurger?.registerPurgableScope(SCOPE_NAME)
+        }
+    }
+
+The above example illustrates how to register a custom scope with the `reloadedScopedBeanSessionPurger` bean via the `registerPurgableScope(String scopeName)` method. Now, whenever a bean is reloaded of our custom scope it will be removed from the session.
+
+#### Non Session Based Scopes
+
+If your custom scope has a completely different storage mechanism, you may need to provide a `ScopedBeanReloadListener` implementation that can purge beans based on old classes. It's likely that a convenient implementer of this will be your actual scope implementation (but does not need to be).
+
+    import org.springframework.beans.factory.ObjectFactory
+    import org.springframework.beans.factory.config.Scope
+    import grails.plugin.scopedproxy.reload.ScopedBeanReloadListener
+        
+    class CustomScope implements Scope, ScopedBeanReloadListener {
+        
+        static SCOPE_NAME = "custom"
+        protected storage = [:].asSynchronized()
+        
+        // ScopedBeanReloadListener methods
+        
+        void scopedBeanWasReloaded(String beanName, String scope, String proxyBeanName) {
+            if (scope == SCOPE_NAME) {
+                remove(beanName)
+            }
+        }
+        
+        // Scope Methods
+        
+        def get(String name, ObjectFactory objectFactory) {
+            if (!storage.containsKey(name)) {
+                storage[name] = objectFactory.object
+            } 
+            storage[name]
+        }
+        
+        String getConversationId() {
+            null
+        }
+
+        void registerDestructionCallback(String name, Runnable callback) {
+            // not implemented, but should be
+        }
+        
+        def remove(String name) {
+            storage.remove(name)
+        }
+    }
+
+All instances of `ScopedBeanReloadListener` will be informed whenever any scoped bean has had it's class reloaded.
