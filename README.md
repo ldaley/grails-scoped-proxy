@@ -157,3 +157,26 @@ If your custom scope has a completely different storage mechanism, you may need 
     }
 
 All instances of `ScopedBeanReloadListener` will be informed whenever any scoped bean has had it's class reloaded.
+
+## Proxying Custom Beans
+
+This plugin can be used to support proxying your own beans. You do this via `static` methods on the `grails.plugin.scopedproxy.ScopedProxyGrailsPlugin` class.
+
+    // resources.groovy
+    import grails.plugin.scopedproxy.ScopedProxyGrailsPlugin as SPGP
+    
+    beans {
+        myBean(MyBean) {
+            it.scope = 'session'
+        }
+        
+        def beanBuilder = delegate
+        def classLoader = application.classLoader // Use Grails class loader
+        def beanName = 'myBean'
+        def proxyName = SPGP.getProxyBeanName(myBean) // returns 'myBeanProxy'
+        def beanClass = MyBean
+        
+        SPGP.buildProxy(beanBuilder, classLoader, beanName, beanClass, proxyName)
+    }
+
+Note: while this example shows how to use the `buildProxy()` method, it would certainly be much better to use a service in this case so that you get hot reloading.
