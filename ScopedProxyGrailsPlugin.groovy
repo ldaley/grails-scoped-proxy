@@ -80,8 +80,8 @@ class ScopedProxyGrailsPlugin {
 			def newClass = classLoader.loadClass(event.source.name, false)
 			def proxyName = getProxyBeanName(GrailsClassUtils.getPropertyName(serviceClass.clazz))
 
-			if (log.debugEnabled) {
-				log.debug("handling change of service class '$newClass.name'")
+			if (log.infoEnabled) {
+				log.info("handling change of service class '$newClass.name'")
 			}
 
 			def didBuildProxy = false
@@ -108,8 +108,8 @@ class ScopedProxyGrailsPlugin {
 				listener.scopedBeanWasReloaded(beanName, scope, proxyBeanName)
 			}
 		} else {
-			if (log.infoEnabled) {
-				log.info("No scoped bean reload listeners found")
+			if (log.warnEnabled) {
+				log.warn("No scoped bean reload listeners found")
 			}
 		}
 	}
@@ -191,8 +191,8 @@ class ScopedProxyGrailsPlugin {
 		def scope = getScope(propertyFetcher)
 
 		if (wantsProxy) {
-			if (log.debugEnabled) {
-				log.debug("service class '$serviceClass.name' DOES want a proxy")
+			if (log.infoEnabled) {
+				log.info("service class '$serviceClass.name' DOES want a proxy")
 			}
 			if (isTransactional(propertyFetcher)) {
 				buildTransactionalServiceProxy(beanBuilder, classLoader, serviceClass, scope)
