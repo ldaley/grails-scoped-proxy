@@ -44,6 +44,8 @@ class ScopedProxyGrailsPlugin {
 	def documentation = "http://github.com/alkemist/grails-scoped-proxy"
 
 	static PROXY_BEAN_SUFFIX = 'Proxy'
+	static DEFAULT_SCOPE = 'singleton'
+	static NON_PROXYABLE_SCOPES = ['singleton', 'prototype'].asImmutable()
 
 	def doWithSpring = {
 		for (serviceClass in application.serviceClasses) {
@@ -127,7 +129,25 @@ class ScopedProxyGrailsPlugin {
 	}
 
 	static wantsProxy(ClassPropertyFetcher propertyFetcher) {
-		propertyFetcher.getPropertyValue("proxy") == true
+		if (propertyFetcher.getPropertyValue("proxy") == true) {
+			def isProxyableScope = isProxyableScope(getScope(propertyFetcher))
+			if (isProxyableScope) {
+				true
+			} else {
+				if (log.warnEnabled) {
+					// TODO ClassPropertyFetcher in Grails 1.2 has no way to get the 
+					// underlying class, should test for 1.3 and display class name
+					log.warn("class has 'proxy = true' but is not a proxyable scope")
+				}
+				false
+			}
+		} else {
+			false
+		}
+	}
+
+	static isProxyableScope(String scope) {
+		!(scope in NON_PROXYABLE_SCOPES)
 	}
 
 	static getScope(Class clazz) {
@@ -135,15 +155,7 @@ class ScopedProxyGrailsPlugin {
 	}
 
 	static getScope(ClassPropertyFetcher propertyFetcher) {
-		propertyFetcher.getPropertyValue("scope")
-	}
-
-	static isScoped(Class clazz) {
-		isScoped(createPropertyFetcher(clazz))
-	}
-
-	static isScoped(ClassPropertyFetcher propertyFetcher) {
-		getScope(propertyFetcher) != null
+		propertyFetcher.getPropertyValue("scope") || DEFAULT_SCOPE
 	}
 
 	static isTransactional(Class clazz) {
