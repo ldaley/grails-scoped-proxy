@@ -260,3 +260,9 @@ For this example, we will use a new artefact type of `Thing` which is basically 
     }
 
 Checkout the `ScopedProxyUtils` class for more information.
+
+## Known Issues
+
+* Request scoped beans inside transactional session scoped beans
+
+There are currently issues with this. After the request scoped bean has been reloaded, accessing it's proxy in a transactional session scoped bean will cause a `ClassCastException`. The current solution is to reload the transactional session scoped class.
