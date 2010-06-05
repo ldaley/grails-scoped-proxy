@@ -21,6 +21,11 @@ import org.slf4j.LoggerFactory
 /**
  * Checks all active sessions for the presence of a bean whose class
  * was reloaded, and removes it from the session if found.
+ * 
+ * Note: there is a problem here in that we are really working around 
+ *       the actual SessionScope implementation, so are bypassing any
+ *       registered destruction call backs. I do not know of a way
+ *       to invoke the destruction callbacks outside of the session.
  */
 class ReloadedScopedBeanSessionPurger implements ScopedBeanReloadListener {
 
