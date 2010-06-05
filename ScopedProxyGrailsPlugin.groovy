@@ -112,6 +112,16 @@ class ScopedProxyGrailsPlugin {
 		}
 	}
 
+	static buildProxy(beanBuilder, classLoader, targetBeanName, targetClass, proxyBeanName) {
+		beanBuilder.with {
+			"$proxyBeanName"(ClassLoaderConfigurableScopedProxyFactoryBean, targetClass) {
+				delegate.targetBeanName = targetBeanName
+				delegate.classLoader = wrapInSmartClassLoader(classLoader)
+				proxyTargetClass = true
+			}
+		}
+	}
+
 	static private buildServiceProxyIfNecessary(beanBuilder, classLoader, serviceClass) {
 		def propertyFetcher = createPropertyFetcher(serviceClass)
 		def wantsProxy = wantsProxy(propertyFetcher)
@@ -173,17 +183,6 @@ class ScopedProxyGrailsPlugin {
 		}
 
 		buildServiceProxy(beanBuilder, classLoader, serviceClass)
-	}
-
-
-	static buildProxy(beanBuilder, classLoader, targetBeanName, targetClass, proxyBeanName) {
-		beanBuilder.with {
-			"$proxyBeanName"(ClassLoaderConfigurableScopedProxyFactoryBean, targetClass) {
-				delegate.targetBeanName = targetBeanName
-				delegate.classLoader = wrapInSmartClassLoader(classLoader)
-				proxyTargetClass = true
-			}
-		}
 	}
 
 	static wantsProxy(Class clazz) {
