@@ -194,13 +194,6 @@ class ScopedProxyGrailsPlugin {
 			if (log.debugEnabled) {
 				log.debug("service class '$serviceClass.name' DOES want a proxy")
 			}
-			if (!scope) {
-				if (log.debugEnabled) {
-					log.debug("service class '$serviceClass.name' does NOT define a scope, defaulting to 'singleton'")
-				}
-				scope = "singleton"
-			}
-
 			if (isTransactional(propertyFetcher)) {
 				buildTransactionalServiceProxy(beanBuilder, classLoader, serviceClass, scope)
 			} else {
