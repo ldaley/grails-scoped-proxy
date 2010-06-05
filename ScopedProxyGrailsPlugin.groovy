@@ -122,6 +122,57 @@ class ScopedProxyGrailsPlugin {
 		}
 	}
 
+	static wantsProxy(Class clazz) {
+		wantsProxy(createPropertyFetcher(clazz))
+	}
+
+	static wantsProxy(ClassPropertyFetcher propertyFetcher) {
+		propertyFetcher.getPropertyValue("proxy") == true
+	}
+
+	static getScope(Class clazz) {
+		getScope(createPropertyFetcher(clazz))
+	}
+
+	static getScope(ClassPropertyFetcher propertyFetcher) {
+		propertyFetcher.getPropertyValue("scope")
+	}
+
+	static isScoped(Class clazz) {
+		isScoped(createPropertyFetcher(clazz))
+	}
+
+	static isScoped(ClassPropertyFetcher propertyFetcher) {
+		getScope(propertyFetcher) != null
+	}
+
+	static isTransactional(Class clazz) {
+		isTransactional(createPropertyFetcher(clazz))
+	}
+
+	static isTransactional(ClassPropertyFetcher propertyFetcher) {
+		def transactional = propertyFetcher.getPropertyValue('transactional')
+		transactional == null || transactional != false
+	}
+
+	static createPropertyFetcher(clazz) {
+		// TODO, use the better ClassPropertyFetcher.forClass() if in Grails 1.3+
+		new ClassPropertyFetcher(clazz, [getReferenceInstance: { -> clazz.newInstance() }] as ClassPropertyFetcher.ReferenceInstanceCallback)
+	}
+
+	static getProxyBeanName(beanName) {
+		beanName + PROXY_BEAN_SUFFIX
+	}
+
+	static wrapInSmartClassLoader(ClassLoader classLoader) {
+		new AlwaysReloadableSmartClassLoader(classLoader)
+	}
+
+	static isEnvironmentClassReloadable() {
+		def env = Environment.current
+		env.reloadEnabled || (Metadata.current.getApplicationName() == "scopedproxy" && env == Environment.TEST)
+	}
+
 	static private buildServiceProxyIfNecessary(beanBuilder, classLoader, serviceClass) {
 		def propertyFetcher = createPropertyFetcher(serviceClass)
 		def wantsProxy = wantsProxy(propertyFetcher)
@@ -183,57 +234,6 @@ class ScopedProxyGrailsPlugin {
 		}
 
 		buildServiceProxy(beanBuilder, classLoader, serviceClass)
-	}
-
-	static wantsProxy(Class clazz) {
-		wantsProxy(createPropertyFetcher(clazz))
-	}
-
-	static wantsProxy(ClassPropertyFetcher propertyFetcher) {
-		propertyFetcher.getPropertyValue("proxy") == true
-	}
-
-	static getScope(Class clazz) {
-		getScope(createPropertyFetcher(clazz))
-	}
-
-	static getScope(ClassPropertyFetcher propertyFetcher) {
-		propertyFetcher.getPropertyValue("scope")
-	}
-
-	static isScoped(Class clazz) {
-		isScoped(createPropertyFetcher(clazz))
-	}
-
-	static isScoped(ClassPropertyFetcher propertyFetcher) {
-		getScope(propertyFetcher) != null
-	}
-
-	static isTransactional(Class clazz) {
-		isTransactional(createPropertyFetcher(clazz))
-	}
-
-	static isTransactional(ClassPropertyFetcher propertyFetcher) {
-		def transactional = propertyFetcher.getPropertyValue('transactional')
-		transactional == null || transactional != false
-	}
-
-	static createPropertyFetcher(clazz) {
-		// TODO, use the better ClassPropertyFetcher.forClass() if in Grails 1.3+
-		new ClassPropertyFetcher(clazz, [getReferenceInstance: { -> clazz.newInstance() }] as ClassPropertyFetcher.ReferenceInstanceCallback)
-	}
-
-	static getProxyBeanName(beanName) {
-		beanName + PROXY_BEAN_SUFFIX
-	}
-
-	static wrapInSmartClassLoader(ClassLoader classLoader) {
-		new AlwaysReloadableSmartClassLoader(classLoader)
-	}
-
-	static isEnvironmentClassReloadable() {
-		def env = Environment.current
-		env.reloadEnabled || (Metadata.current.getApplicationName() == "scopedproxy" && env == Environment.TEST)
 	}
 
 	private static final log = LoggerFactory.getLogger("grails.plugin.scopedproxy.ScopedProxyGrailsPlugin")
