@@ -24,6 +24,7 @@ import org.codehaus.groovy.grails.orm.support.GroovyAwareNamedTransactionAttribu
 import org.codehaus.groovy.grails.commons.ClassPropertyFetcher
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
 import grails.util.Environment
+import grails.util.Metadata
 
 class ScopedProxyGrailsPlugin {
 
@@ -234,7 +235,7 @@ class ScopedProxyGrailsPlugin {
 	
 	static isEnvironmentClassReloadable() {
 		def env = Environment.current
-		env == Environment.TEST || env.reloadEnabled
+		env.reloadEnabled || (Metadata.current.getApplicationName() == "scopedproxy" && env == Environment.TEST)
 	}
 
 	private static final log = LoggerFactory.getLogger("grails.plugin.scopedproxy.ScopedProxyGrailsPlugin")
