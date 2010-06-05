@@ -13,11 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-class SessionScopedService {
-	static scope = "session"
+class RequestScopedService {
+	static scope = "request"
 	static proxy = true
-	static transactional = false
 	def var = 0
-	
-	def requestScopedServiceProxy
 }

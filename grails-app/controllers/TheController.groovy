@@ -16,8 +16,13 @@
 class TheController {
 	
 	def grailsApplication
+	def sessionScopedService
 	
 	def sessionScopedServiceVar = {}
+	
+	def requestScopedInsideSessionVar = {
+		render "requestScopedInsideSessionVar: ${sessionScopedService.requestScopedServiceProxy.var}"
+	}
 	
 	def usedInFilterScopedServiceInvoker = {
 		render "If you are seeing this after reloading UsedInFilterScopedService, you win."

@@ -15,8 +15,10 @@
  */
 import grails.plugin.scopedproxy.ScopedProxyUtils as SPU
 import grails.plugin.scopedproxy.TypeSpecifyableTransactionProxyFactoryBean
+
 import grails.plugin.scopedproxy.reload.session.ReloadedScopedBeanSessionPurger
 import grails.plugin.scopedproxy.reload.filters.ReloadedScopedBeanFiltersReloader
+import grails.plugin.scopedproxy.reload.request.RequestScopedBeanReloadSessionPurger
 
 import org.slf4j.LoggerFactory
 import org.codehaus.groovy.grails.orm.support.GroovyAwareNamedTransactionAttributeSource
@@ -56,6 +58,13 @@ class ScopedProxyGrailsPlugin {
 				log.info("Registering filters reloader in application context")
 			}
 			reloadedScopedBeanFiltersReloader(ReloadedScopedBeanFiltersReloader) {
+				it.autowire = true
+			}
+
+			if (log.infoEnabled) {
+				log.info("Registering request scoped bean reload listener in application context")
+			}
+			requestScopedBeanReloadSessionPurger(RequestScopedBeanReloadSessionPurger) {
 				it.autowire = true
 			}
 		} else {

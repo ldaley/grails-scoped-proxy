@@ -67,7 +67,7 @@ class ReloadedScopedBeanSessionPurger implements ScopedBeanReloadListener {
 		// do nothing
 	}
 	
-	protected purgeFromSessions(String key) {
+	void purgeFromSessions(String key) {
 		if (log.warnEnabled) {
 			log.warn("purging '$key' from all sessions")
 		}

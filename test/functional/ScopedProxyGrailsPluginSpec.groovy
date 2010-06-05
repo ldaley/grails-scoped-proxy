@@ -37,6 +37,23 @@ class ScopedProxyGrailsPluginSpec extends FunctionalSpec {
 		// here due to a ClassCastException
 		response.statusCode == 200
 	}
+
+	void testSessionPurgingOnReloadOfRequestScopedInsideSessionScoped() {
+		when: "requesting a page using the request proxy via the session scope"
+		get("/sessionScopedServiceVar")
+		get("/requestScopedInsideSessionVar")
+		then: "the request is successful"
+		response.statusCode == 200
+		
+		when: "the session scoped service is reloaded"
+		reload(RequestScopedService)
+		and: "requesting a page using the request proxy via the session scope"
+		get("/requestScopedInsideSessionVar")
+		then: "the request is successful"
+		// It the session purging didn't happen, we will get a 500 
+		// here due to a ClassCastException
+		response.statusCode == 200
+	}
 	
 	void testFilterReloadingOnReload() {
 		when: "requesting a page using the usedInFilter scoped service proxy in a filter"
