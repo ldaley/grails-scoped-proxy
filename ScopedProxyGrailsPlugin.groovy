@@ -248,5 +248,5 @@ class ScopedProxyGrailsPlugin {
 		buildServiceProxy(beanBuilder, classLoader, serviceClass)
 	}
 
-	private static final log = LoggerFactory.getLogger("grails.plugin.scopedproxy.ScopedProxyGrailsPlugin")
+	private static final log = LoggerFactory.getLogger(ScopedProxyGrailsPlugin)
 }
