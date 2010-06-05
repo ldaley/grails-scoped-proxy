@@ -1,0 +1,3 @@
+class TheController {
+	def index = {}
+}
