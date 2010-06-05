@@ -9,4 +9,5 @@
 * Improved reloading support by avoiding proxy class caching in CGLIB
 * API and pluggable mechanism for destroying old scoped beans on class reload
 * Improved reload support for session scoped beans (the old beans are now removed from the session)
+* Improved reload support for proxies in filters
 * An improved proxy factory bean that specifies the target class
