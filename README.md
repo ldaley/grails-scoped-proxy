@@ -180,3 +180,75 @@ This plugin can be used to support proxying your own beans. You do this via `sta
     }
 
 Note: while this example shows how to use the `buildProxy()` method, it would certainly be much better to use a service in this case so that you get hot reloading.
+
+## Proxying Custom Artefacts
+
+Plugin developers may wish to provide scoping of their artefacts and supporting proxying in the same manner as services.
+
+For this example, we will use a new artefact type of `Thing` which is basically the same as a Grails service.
+
+    import grails.plugin.scopedproxy.ScopedProxyGrailsPlugin as SPGP
+    
+    class ThingGrailsPlugin {
+        
+        // Usual plugin stuff
+        …
+        
+        def artefacts = [ThingArtefactHandler]
+        def watchedResources = [
+            "file:./grails-app/things/**/*Thing.groovy",
+            "file:../../plugins/*/things/**/*Thing.groovy"
+        ]
+        
+        def doWithSpring = {
+            for (thingGrailsClass in application.thingClasses) {
+                def clazz = thingGrailsClass.clazz
+                def beanName = thingGrailsClass.propertyName
+
+                // getScope() looks for a 'scope' property, and returns 'singleton' if none found
+                def scope = SPGP.getScope(clazz)
+                
+                "$beanName"(clazz) { beanDefinition ->
+                    beanDefinition.scope = scope
+                    // other definition
+                }
+                
+                if (SPGP.wantsProxy(clazz)) { // class has a 'proxy' property set to true
+                    SPGP.buildProxy(delegate, application.classLoader, beanName, clazz, SPGP.getProxyBeanName(beanName))
+                }
+            }
+        }
+        
+        // Reload support
+        def onChange = {
+            if (application.isThingClass(event.source)) {
+                def classLoader = application.classLoader
+                def newClass = classLoader.loadClass(event.source.name, false) // make sure we get the new class
+                def grailsClass = application.getThingClass(event.source.name)
+                def beanName = grailsClass.propertyName
+                def scope = SPGP.getScope(newClass)
+                
+                def beans = beans {
+                    // Redefine the bean
+                    "$beanName"(newClass) { beanDefinition ->
+                        beanDefinition.scope = scope
+                        // other definition
+                    }
+                    
+                    if (SPGP.wantsProxy(newClass)) {
+                        def proxyBeanName = SPGP.getProxyBeanName(beanName)
+                        
+                        // Redefine the proxy
+                        SPGP.buildProxy(delegate, classLoader, beanName, newClass, proxyBeanName)
+                        
+                        // Inform listeners that a scoped bean has changed (allows purging old beans)
+                        SPGP.informListenersOfReload(application, beanName, scope, proxyBeanName)
+                    }
+                }
+                
+                beanDefinitions.registerBeans(event.ctx)
+            }
+        }
+    }
+
+Checkout the `ScopedProxyGrailsPlugin` for more information.
