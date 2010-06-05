@@ -27,7 +27,7 @@ import grails.util.Environment
 
 class ScopedProxyGrailsPlugin {
 
-	def version = "0.1.1-SNAPSHOT"
+	def version = "0.2-SNAPSHOT"
 	def grailsVersion = "1.2.0 > *"
 	def dependsOn = [:]
 	def observe = ["services"]
