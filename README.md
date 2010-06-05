@@ -1,6 +1,6 @@
 # Scoped Proxy Plugin
 
-Version: 0.1
+Version: 0.2
 
 The _scoped-proxy_ plugin allows you to easily create proxies for scoped services.
 
