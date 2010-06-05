@@ -217,6 +217,7 @@ class ScopedProxyGrailsPlugin {
 	}
 
 	static createPropertyFetcher(clazz) {
+		// TODO, use the better ClassPropertyFetcher.forClass() if in Grails 1.3+
 		new ClassPropertyFetcher(clazz, [getReferenceInstance: { -> clazz.newInstance() }] as ClassPropertyFetcher.ReferenceInstanceCallback)
 	}
 
