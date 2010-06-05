@@ -9,10 +9,38 @@ import org.slf4j.LoggerFactory
  */
 class ReloadedScopedBeanSessionPurger implements ScopedBeanReloadListener {
 
-	def sessions = [].asSynchronized()
-
+	private sessions = [].asSynchronized()
+	private scopes = [].asSynchronized()
+	
+	ReloadedScopedBeanSessionPurger() {
+		registerPurgableScope("session")
+	}
+	
+	def registerPurgableScope(String scope) {
+		if (!isPurgableScope(scope)) {
+			if (log.infoEnabled) {
+				log.info("Scope '$scope' registered as a purgable scope")
+			}
+			scopes << scope
+		} else {
+			if (log.debugEnabled) {
+				log.debug("Scope '$scope' is already registered as a purgable scope")
+			}
+		}
+	}
+	
+	def isPurgableScope(String scope) {
+		scope in scopes
+	}
+	
 	void scopedBeanWasReloaded(String beanName, String scope, String proxyBeanName) {
-		purgeFromSessions(beanName)
+		if (isPurgableScope(scope)) {
+			purgeFromSessions(beanName)
+		} else {
+			if (log.debugEnabled) {
+				log.debug("Ignoring reload of '$beanName' as scope '$scope' is not a purgable scope")
+			}
+		}
 	}
 	
 	protected purgeFromSessions(String key) {
