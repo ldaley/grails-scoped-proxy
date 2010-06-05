@@ -21,8 +21,11 @@ import grails.plugin.scopedproxy.reload.ScopedBeanReloadListener
 import org.slf4j.LoggerFactory
 import org.codehaus.groovy.grails.commons.ClassPropertyFetcher
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
+import org.codehaus.groovy.grails.commons.GrailsApplication
 import grails.util.Environment
 import grails.util.Metadata
+
+import org.springframework.beans.factory.support.BeanDefinitionRegistry
 
 class ScopedProxyUtils {
 
@@ -40,19 +43,50 @@ class ScopedProxyUtils {
 		}
 	}
 
-	static informListenersOfReload(application, beanName, scope, proxyBeanName) {
+	static fireWillReloadIfNecessary(GrailsApplication application, String beanName, String proxyBeanName) {
+		def scope = getBeanScope(application.mainContext, beanName)
+		if (isProxyableScope(scope)) {
+			scopedBeanWillReload(application, beanName, scope, proxyBeanName)
+		}
+	}
+
+	static fireWasReloadedIfNecessary(GrailsApplication application, String beanName, String proxyBeanName) {
+		def scope = getBeanScope(application.mainContext, beanName)
+		if (isProxyableScope(scope)) {
+			scopedBeanWasReloaded(application, beanName, scope, proxyBeanName)
+		}
+	}
+
+	static scopedBeanWillReload(GrailsApplication application, String beanName, String scope, String proxyBeanName) {
+		fireReloadListenerMethod(application, "scopedBeanWillReload", beanName, scope, proxyBeanName)
+	}
+	
+	static scopedBeanWasReloaded(GrailsApplication application, String beanName, String scope, String proxyBeanName) {
+		fireReloadListenerMethod(application, "scopedBeanWasReloaded", beanName, scope, proxyBeanName)
+	}
+
+	static private fireReloadListenerMethod(application, method, beanName, scope, proxyBeanName) {
+		def listeners = getReloadListeners(application)
+		listeners.each { listenerName, listener ->
+			if (log.infoEnabled) {
+				log.info("firing '$method' on '$listenerName' due to reload of '$beanName'")
+			}
+			listener."$method"(beanName, scope, proxyBeanName)
+		}
+	}
+
+	static private getReloadListeners(application) {
 		def listeners = application.mainContext.getBeansOfType(ScopedBeanReloadListener)
 		if (listeners) {
-			listeners.each { listenerName, listener ->
-				if (log.infoEnabled) {
-					log.info("Informing '$listenerName' of reload of '$beanName'")
-				}
-				listener.scopedBeanWasReloaded(beanName, scope, proxyBeanName)
+			if (log.debugEnabled) {
+				log.warn("found ${listeners.size()} reload listeners")
 			}
+			listeners
 		} else {
 			if (log.warnEnabled) {
 				log.warn("No scoped bean reload listeners found")
 			}
+			[]
 		}
 	}
 
@@ -82,6 +116,14 @@ class ScopedProxyUtils {
 		!(scope in NON_PROXYABLE_SCOPES)
 	}
 
+	static getBeanScope(BeanDefinitionRegistry registry, String beanName) {
+		if (registry.containsBeanDefinition(beanName)) {
+			registry.getBeanDefinition(beanName).scope
+		} else {
+			false
+		}
+	}
+	
 	static getScope(Class clazz) {
 		getScope(createPropertyFetcher(clazz))
 	}

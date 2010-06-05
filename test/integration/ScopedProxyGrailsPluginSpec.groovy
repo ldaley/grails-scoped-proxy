@@ -53,7 +53,11 @@ class ScopedProxyGrailsPluginSpec extends IntegrationSpec {
 
 		cleanup:
 		NonProxyableScopedService.proxy = false
-		grailsApplication.mainContext.removeBeanDefinition(getProxyNameForService('nonProxyableScopedService'))
+		def context = grailsApplication.mainContext
+		def proxyName = getProxyNameForService('nonProxyableScopedService')
+		if (context.containsBeanDefinition(proxyName)) {
+			context.removeBeanDefinition(proxyName)
+		}
 		assert getProxyForService('nonProxyableScopedService') == null
 	}
 

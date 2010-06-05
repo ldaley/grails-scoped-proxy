@@ -13,14 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import org.slf4j.LoggerFactory
+
 class TheTagLib {
 
 	static namespace = 'the'
 	
 	def sessionScopedServiceProxy
+		
+	void setSessionScopedServiceProxy(sessionScopedServiceProxy) {
+		log.info("incoming sessionScopedServiceProxy to taglib hash: ${System.identityHashCode(sessionScopedServiceProxy)}")
+		this.sessionScopedServiceProxy = sessionScopedServiceProxy
+	}
 	
 	def sessionScopedServiceVar = {
+		log.info("hash of sessionScopedServiceProxy in tag lib: ${System.identityHashCode(this.sessionScopedServiceProxy)}")
 		out << sessionScopedServiceProxy.var
 	}
 
+	private static final log = LoggerFactory.getLogger('grails.app.tagLib.TheTagLib')
 }

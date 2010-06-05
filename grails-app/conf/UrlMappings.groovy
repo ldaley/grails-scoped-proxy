@@ -14,13 +14,8 @@
  * limitations under the License.
  */
 class UrlMappings {
-    static mappings = {
-      "/$controller/$action?/$id?"{
-	      constraints {
-			 // apply constraints here
-		  }
-	  }
-      "/"(controller: "the", action: 'index')
-	  "500"(view:'/error')
+	static mappings = {
+		"/$action"(controller: "the")
+		"500"(view:'/error')
 	}
 }

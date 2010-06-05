@@ -20,6 +20,16 @@ package grails.plugin.scopedproxy.reload
  * in the application context will be informed.
  */
 interface ScopedBeanReloadListener {
+
+	/**
+	 * Called when a scoped bean's class has been reloaded, but before it's bean definition
+	 * has been recreated.
+	 * 
+	 * @param beanName The name of the bean whose class was reloaded
+	 * @param scope The bean scope of the bean
+	 * @param proxyBeanName The name of the proxy for this bean (may be null if there is no proxy)
+	 */
+	void scopedBeanWillReload(String beanName, String scope, String proxyBeanName)
 	
 	/**
 	 * Called when a scoped bean's class has been reloaded.

@@ -16,6 +16,7 @@
 import grails.plugin.scopedproxy.ScopedProxyUtils as SPU
 import grails.plugin.scopedproxy.TypeSpecifyableTransactionProxyFactoryBean
 import grails.plugin.scopedproxy.reload.session.ReloadedScopedBeanSessionPurger
+import grails.plugin.scopedproxy.reload.filters.ReloadedScopedBeanFiltersReloader
 
 import org.slf4j.LoggerFactory
 import org.codehaus.groovy.grails.orm.support.GroovyAwareNamedTransactionAttributeSource
@@ -47,7 +48,16 @@ class ScopedProxyGrailsPlugin {
 			if (log.infoEnabled) {
 				log.info("Registering session purger in application context")
 			}
-			"reloadedScopedBeanSessionPurger"(ReloadedScopedBeanSessionPurger)
+			reloadedScopedBeanSessionPurger(ReloadedScopedBeanSessionPurger) {
+				it.autowire = true
+			}
+
+			if (log.infoEnabled) {
+				log.info("Registering filters reloader in application context")
+			}
+			reloadedScopedBeanFiltersReloader(ReloadedScopedBeanFiltersReloader) {
+				it.autowire = true
+			}
 		} else {
 			if (log.debugEnabled) {
 				log.debug("NOT registering session purger in application context (env not reloadable)")
@@ -76,12 +86,15 @@ class ScopedProxyGrailsPlugin {
 			def classLoader = application.classLoader
 			def serviceClass = application.getServiceClass(event.source.name)
 			def newClass = classLoader.loadClass(event.source.name, false)
-			def proxyName = SPU.getProxyBeanName(GrailsClassUtils.getPropertyName(serviceClass.clazz))
+			def serviceBeanName = GrailsClassUtils.getPropertyName(newClass)
+			def proxyName = SPU.getProxyBeanName(serviceBeanName)
 
 			if (log.infoEnabled) {
 				log.info("handling change of service class '$newClass.name'")
 			}
-
+			
+			SPU.fireWillReloadIfNecessary(application, serviceBeanName, proxyName)
+			
 			def didBuildProxy = false
 			def beanDefinitions = beans {
 				didBuildProxy = buildServiceProxyIfNecessary(delegate, classLoader, newClass)
@@ -90,9 +103,8 @@ class ScopedProxyGrailsPlugin {
 			if (didBuildProxy) {
 				beanDefinitions.registerBeans(event.ctx)
 			}
-
-			def serviceBeanName = GrailsClassUtils.getPropertyName(newClass)
-			SPU.informListenersOfReload(application, serviceBeanName, SPU.getScope(newClass), proxyName)
+			
+			SPU.fireWasReloadedIfNecessary(application, serviceBeanName, proxyName)
 		}
 	}
 

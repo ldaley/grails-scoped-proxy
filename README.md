@@ -132,10 +132,14 @@ If your custom scope has a completely different storage mechanism, you may need 
         
         // ScopedBeanReloadListener methods
         
-        void scopedBeanWasReloaded(String beanName, String scope, String proxyBeanName) {
+        void scopedBeanWillReload(String beanName, String scope, String proxyBeanName) {
             if (scope == SCOPE_NAME) {
                 remove(beanName)
             }
+        }
+        
+        void scopedBeanWasReloaded(String beanName, String scope, String proxyBeanName) {
+            // do nothing
         }
         
         // Scope Methods
@@ -231,6 +235,9 @@ For this example, we will use a new artefact type of `Thing` which is basically 
                 def grailsClass = application.getThingClass(event.source.name)
                 def beanName = grailsClass.propertyName
                 def scope = SPU.getScope(newClass)
+                def proxyBeanName = SPU.getProxyBeanName(beanName)
+                
+                SPU.fireWillReloadIfNecessary(application, beanName, proxyBeanName)
                 
                 def beans = beans {
                     // Redefine the bean
@@ -240,17 +247,14 @@ For this example, we will use a new artefact type of `Thing` which is basically 
                     }
                     
                     if (SPU.wantsProxy(newClass)) {
-                        def proxyBeanName = SPU.getProxyBeanName(beanName)
-                        
                         // Redefine the proxy
                         SPU.buildProxy(delegate, classLoader, beanName, newClass, proxyBeanName)
-                        
-                        // Inform listeners that a scoped bean has changed (allows purging old beans)
-                        SPU.informListenersOfReload(application, beanName, scope, proxyBeanName)
                     }
                 }
                 
                 beanDefinitions.registerBeans(event.ctx)
+                
+                SPU.fireWasReloadedIfNecessary(application, beanName, proxyBeanName)
             }
         }
     }

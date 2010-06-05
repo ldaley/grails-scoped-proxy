@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 log4j = {
-    error ''
+    debug 'grails.app'
     debug 'grails.plugin.scopedproxy'
+/*	debug 'org.codehaus.groovy.grails.commons.spring.ReloadAwareAutowireCapableBeanFactory'*/
+/*	debug 'org.codehaus.groovy.grails.plugins.web.filters.FiltersGrailsPlugin'*/
 }
 
 grails {

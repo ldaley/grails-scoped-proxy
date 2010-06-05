@@ -53,7 +53,7 @@ class ReloadedScopedBeanSessionPurger implements ScopedBeanReloadListener {
 		scope in scopes
 	}
 	
-	void scopedBeanWasReloaded(String beanName, String scope, String proxyBeanName) {
+	void scopedBeanWillReload(String beanName, String scope, String proxyBeanName) {
 		if (isPurgableScope(scope)) {
 			purgeFromSessions(beanName)
 		} else {
@@ -61,6 +61,10 @@ class ReloadedScopedBeanSessionPurger implements ScopedBeanReloadListener {
 				log.debug("Ignoring reload of '$beanName' as scope '$scope' is not a purgable scope")
 			}
 		}
+	}
+	
+	void scopedBeanWasReloaded(String beanName, String scope, String proxyBeanName) {
+		// do nothing
 	}
 	
 	protected purgeFromSessions(String key) {

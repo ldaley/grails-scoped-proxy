@@ -13,13 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-class TheController {
-	
-	def grailsApplication
-	
-	def sessionScopedServiceVar = {}
-	
-	def usedInFilterScopedServiceInvoker = {
-		render "If you are seeing this after reloading UsedInFilterScopedService, you win."
-	}
+class UsedInFilterScopedService {
+	static scope = "session"
+	static proxy = true
+	static transactional = false
+	def var = 0
 }
