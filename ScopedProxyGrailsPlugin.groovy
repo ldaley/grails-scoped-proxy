@@ -34,7 +34,7 @@ class ScopedProxyGrailsPlugin {
 	def observe = ["services"]
 	def loadAfter = ['services']
 	def pluginExcludes = [
-			"grails-app/**/*"
+		"grails-app/**/*"
 	]
 
 	def author = "Luke Daley"
@@ -49,11 +49,10 @@ class ScopedProxyGrailsPlugin {
 		for (serviceClass in application.serviceClasses) {
 			buildServiceProxyIfNecessary(delegate, application.classLoader, serviceClass.clazz)
 		}
-		
+
 		if (isEnvironmentClassReloadable()) {
 			"reloadedScopedBeanSessionPurger"(ReloadedScopedBeanSessionPurger)
 		}
-		
 	}
 
 	def doWithWebDescriptor = { webXml ->
@@ -61,7 +60,7 @@ class ScopedProxyGrailsPlugin {
 			if (log.debugEnabled) {
 				log.debug("Registering session listener in web descriptor for ReloadedScopedBeanSessionPurger")
 			}
-			
+
 			def listeners = webXml.'listener'
 			def lastListener = listeners[listeners.size()-1]
 			listeners + {
@@ -71,14 +70,14 @@ class ScopedProxyGrailsPlugin {
 			}
 		}
 	}
-	
+
 	def onChange = { event ->
 		if (application.isServiceClass(event.source)) {
 			def classLoader = application.classLoader
 			def serviceClass = application.getServiceClass(event.source.name)
 			def newClass = classLoader.loadClass(event.source.name, false)
 			def proxyName = getProxyBeanName(GrailsClassUtils.getPropertyName(serviceClass.clazz))
-			
+
 			if (log.debugEnabled) {
 				log.debug("handling change of service class '$newClass.name'")
 			}
@@ -87,11 +86,11 @@ class ScopedProxyGrailsPlugin {
 			def beanDefinitions = beans {
 				didBuildProxy = buildServiceProxyIfNecessary(delegate, classLoader, newClass)
 			}
-			
+
 			if (didBuildProxy) {
 				beanDefinitions.registerBeans(event.ctx)
 			}
-			
+
 			def serviceBeanName = GrailsClassUtils.getPropertyName(newClass)
 			informListenersOfReload(application, serviceBeanName, getScope(newClass), proxyName)
 		}
@@ -105,14 +104,14 @@ class ScopedProxyGrailsPlugin {
 					log.info("Informing '$listenerName' of reload of '$beanName'")
 				}
 				listener.scopedBeanWasReloaded(beanName, scope, proxyBeanName)
-			} 
+			}
 		} else {
 			if (log.infoEnabled) {
 				log.info("No scoped bean reload listeners found")
 			}
 		}
 	}
-	
+
 	static private buildServiceProxyIfNecessary(beanBuilder, classLoader, serviceClass) {
 		def propertyFetcher = createPropertyFetcher(serviceClass)
 		def wantsProxy = wantsProxy(propertyFetcher)
@@ -232,7 +231,7 @@ class ScopedProxyGrailsPlugin {
 	static wrapInSmartClassLoader(ClassLoader classLoader) {
 		new AlwaysReloadableSmartClassLoader(classLoader)
 	}
-	
+
 	static isEnvironmentClassReloadable() {
 		def env = Environment.current
 		env.reloadEnabled || (Metadata.current.getApplicationName() == "scopedproxy" && env == Environment.TEST)
