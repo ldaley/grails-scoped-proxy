@@ -164,10 +164,10 @@ All instances of `ScopedBeanReloadListener` will be informed whenever any scoped
 
 ## Proxying Custom Beans
 
-This plugin can be used to support proxying your own beans. You do this via `static` methods on the `grails.plugin.scopedproxy.ScopedProxyGrailsPlugin` class.
+This plugin can be used to support proxying your own beans. You do this via `static` methods on the `grails.plugin.scopedproxy.ScopedProxyUtils` class.
 
     // resources.groovy
-    import grails.plugin.scopedproxy.ScopedProxyGrailsPlugin as SPGP
+    import grails.plugin.scopedproxy.ScopedProxyUtils as SPU
     
     beans {
         myBean(MyBean) {
@@ -177,10 +177,10 @@ This plugin can be used to support proxying your own beans. You do this via `sta
         def beanBuilder = delegate
         def classLoader = application.classLoader // Use Grails class loader
         def beanName = 'myBean'
-        def proxyName = SPGP.getProxyBeanName(myBean) // returns 'myBeanProxy'
+        def proxyName = SPU.getProxyBeanName(myBean) // returns 'myBeanProxy'
         def beanClass = MyBean
         
-        SPGP.buildProxy(beanBuilder, classLoader, beanName, beanClass, proxyName)
+        SPU.buildProxy(beanBuilder, classLoader, beanName, beanClass, proxyName)
     }
 
 Note: while this example shows how to use the `buildProxy()` method, it would certainly be much better to use a service in this case so that you get hot reloading.
@@ -191,7 +191,7 @@ Plugin developers may wish to provide scoping of their artefacts and supporting 
 
 For this example, we will use a new artefact type of `Thing` which is basically the same as a Grails service.
 
-    import grails.plugin.scopedproxy.ScopedProxyGrailsPlugin as SPGP
+    import grails.plugin.scopedproxy.ScopedProxyUtils as SPU
     
     class ThingGrailsPlugin {
         
@@ -210,15 +210,15 @@ For this example, we will use a new artefact type of `Thing` which is basically 
                 def beanName = thingGrailsClass.propertyName
 
                 // getScope() looks for a 'scope' property, and returns 'singleton' if none found
-                def scope = SPGP.getScope(clazz)
+                def scope = SPU.getScope(clazz)
                 
                 "$beanName"(clazz) { beanDefinition ->
                     beanDefinition.scope = scope
                     // other definition
                 }
                 
-                if (SPGP.wantsProxy(clazz)) { // class has a 'proxy' property set to true
-                    SPGP.buildProxy(delegate, application.classLoader, beanName, clazz, SPGP.getProxyBeanName(beanName))
+                if (SPU.wantsProxy(clazz)) { // class has a 'proxy' property set to true
+                    SPU.buildProxy(delegate, application.classLoader, beanName, clazz, SPU.getProxyBeanName(beanName))
                 }
             }
         }
@@ -230,7 +230,7 @@ For this example, we will use a new artefact type of `Thing` which is basically 
                 def newClass = classLoader.loadClass(event.source.name, false) // make sure we get the new class
                 def grailsClass = application.getThingClass(event.source.name)
                 def beanName = grailsClass.propertyName
-                def scope = SPGP.getScope(newClass)
+                def scope = SPU.getScope(newClass)
                 
                 def beans = beans {
                     // Redefine the bean
@@ -239,14 +239,14 @@ For this example, we will use a new artefact type of `Thing` which is basically 
                         // other definition
                     }
                     
-                    if (SPGP.wantsProxy(newClass)) {
-                        def proxyBeanName = SPGP.getProxyBeanName(beanName)
+                    if (SPU.wantsProxy(newClass)) {
+                        def proxyBeanName = SPU.getProxyBeanName(beanName)
                         
                         // Redefine the proxy
-                        SPGP.buildProxy(delegate, classLoader, beanName, newClass, proxyBeanName)
+                        SPU.buildProxy(delegate, classLoader, beanName, newClass, proxyBeanName)
                         
                         // Inform listeners that a scoped bean has changed (allows purging old beans)
-                        SPGP.informListenersOfReload(application, beanName, scope, proxyBeanName)
+                        SPU.informListenersOfReload(application, beanName, scope, proxyBeanName)
                     }
                 }
                 
@@ -255,4 +255,4 @@ For this example, we will use a new artefact type of `Thing` which is basically 
         }
     }
 
-Checkout the `ScopedProxyGrailsPlugin` for more information.
+Checkout the `ScopedProxyUtils` class for more information.

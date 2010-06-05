@@ -13,18 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package grails.plugin.scopedproxy
-
-import grails.plugin.scopedproxy.reload.session.*
-import grails.plugin.scopedproxy.reload.ScopedBeanReloadListener
+import grails.plugin.scopedproxy.ScopedProxyUtils as SPU
+import grails.plugin.scopedproxy.TypeSpecifyableTransactionProxyFactoryBean
+import grails.plugin.scopedproxy.reload.session.ReloadedScopedBeanSessionPurger
 
 import org.slf4j.LoggerFactory
-import org.springframework.aop.scope.ScopedProxyFactoryBean
 import org.codehaus.groovy.grails.orm.support.GroovyAwareNamedTransactionAttributeSource
-import org.codehaus.groovy.grails.commons.ClassPropertyFetcher
 import org.codehaus.groovy.grails.commons.GrailsClassUtils
-import grails.util.Environment
-import grails.util.Metadata
 
 class ScopedProxyGrailsPlugin {
 
@@ -43,22 +38,25 @@ class ScopedProxyGrailsPlugin {
 	def description = 'Adds support for scoped bean proxies (including hot reloading)'
 	def documentation = "http://github.com/alkemist/grails-scoped-proxy"
 
-	static PROXY_BEAN_SUFFIX = 'Proxy'
-	static DEFAULT_SCOPE = 'singleton'
-	static NON_PROXYABLE_SCOPES = ['singleton', 'prototype'].asImmutable()
-
 	def doWithSpring = {
 		for (serviceClass in application.serviceClasses) {
 			buildServiceProxyIfNecessary(delegate, application.classLoader, serviceClass.clazz)
 		}
 
-		if (isEnvironmentClassReloadable()) {
+		if (SPU.isEnvironmentClassReloadable()) {
+			if (log.infoEnabled) {
+				log.info("Registering session purger in application context")
+			}
 			"reloadedScopedBeanSessionPurger"(ReloadedScopedBeanSessionPurger)
+		} else {
+			if (log.debugEnabled) {
+				log.debug("NOT registering session purger in application context (env not reloadable)")
+			}
 		}
 	}
 
 	def doWithWebDescriptor = { webXml ->
-		if (isEnvironmentClassReloadable()) {
+		if (SPU.isEnvironmentClassReloadable()) {
 			if (log.debugEnabled) {
 				log.debug("Registering session listener in web descriptor for ReloadedScopedBeanSessionPurger")
 			}
@@ -78,7 +76,7 @@ class ScopedProxyGrailsPlugin {
 			def classLoader = application.classLoader
 			def serviceClass = application.getServiceClass(event.source.name)
 			def newClass = classLoader.loadClass(event.source.name, false)
-			def proxyName = getProxyBeanName(GrailsClassUtils.getPropertyName(serviceClass.clazz))
+			def proxyName = SPU.getProxyBeanName(GrailsClassUtils.getPropertyName(serviceClass.clazz))
 
 			if (log.infoEnabled) {
 				log.info("handling change of service class '$newClass.name'")
@@ -94,107 +92,20 @@ class ScopedProxyGrailsPlugin {
 			}
 
 			def serviceBeanName = GrailsClassUtils.getPropertyName(newClass)
-			informListenersOfReload(application, serviceBeanName, getScope(newClass), proxyName)
+			SPU.informListenersOfReload(application, serviceBeanName, SPU.getScope(newClass), proxyName)
 		}
-	}
-
-	static informListenersOfReload(application, beanName, scope, proxyBeanName) {
-		def listeners = application.mainContext.getBeansOfType(ScopedBeanReloadListener)
-		if (listeners) {
-			listeners.each { listenerName, listener ->
-				if (log.infoEnabled) {
-					log.info("Informing '$listenerName' of reload of '$beanName'")
-				}
-				listener.scopedBeanWasReloaded(beanName, scope, proxyBeanName)
-			}
-		} else {
-			if (log.warnEnabled) {
-				log.warn("No scoped bean reload listeners found")
-			}
-		}
-	}
-
-	static buildProxy(beanBuilder, classLoader, targetBeanName, targetClass, proxyBeanName) {
-		beanBuilder.with {
-			"$proxyBeanName"(ClassLoaderConfigurableScopedProxyFactoryBean, targetClass) {
-				delegate.targetBeanName = targetBeanName
-				delegate.classLoader = wrapInSmartClassLoader(classLoader)
-				proxyTargetClass = true
-			}
-		}
-	}
-
-	static wantsProxy(Class clazz) {
-		wantsProxy(createPropertyFetcher(clazz))
-	}
-
-	static wantsProxy(ClassPropertyFetcher propertyFetcher) {
-		if (propertyFetcher.getPropertyValue("proxy") == true) {
-			def isProxyableScope = isProxyableScope(getScope(propertyFetcher))
-			if (isProxyableScope) {
-				true
-			} else {
-				if (log.warnEnabled) {
-					// TODO ClassPropertyFetcher in Grails 1.2 has no way to get the 
-					// underlying class, should test for 1.3 and display class name
-					log.warn("class has 'proxy = true' but is not a proxyable scope")
-				}
-				false
-			}
-		} else {
-			false
-		}
-	}
-
-	static isProxyableScope(String scope) {
-		!(scope in NON_PROXYABLE_SCOPES)
-	}
-
-	static getScope(Class clazz) {
-		getScope(createPropertyFetcher(clazz))
-	}
-
-	static getScope(ClassPropertyFetcher propertyFetcher) {
-		propertyFetcher.getPropertyValue("scope") || DEFAULT_SCOPE
-	}
-
-	static isTransactional(Class clazz) {
-		isTransactional(createPropertyFetcher(clazz))
-	}
-
-	static isTransactional(ClassPropertyFetcher propertyFetcher) {
-		def transactional = propertyFetcher.getPropertyValue('transactional')
-		transactional == null || transactional != false
-	}
-
-	static createPropertyFetcher(clazz) {
-		// TODO, use the better ClassPropertyFetcher.forClass() if in Grails 1.3+
-		new ClassPropertyFetcher(clazz, [getReferenceInstance: { -> clazz.newInstance() }] as ClassPropertyFetcher.ReferenceInstanceCallback)
-	}
-
-	static getProxyBeanName(beanName) {
-		beanName + PROXY_BEAN_SUFFIX
-	}
-
-	static wrapInSmartClassLoader(ClassLoader classLoader) {
-		new AlwaysReloadableSmartClassLoader(classLoader)
-	}
-
-	static isEnvironmentClassReloadable() {
-		def env = Environment.current
-		env.reloadEnabled || (Metadata.current.getApplicationName() == "scopedproxy" && env == Environment.TEST)
 	}
 
 	static private buildServiceProxyIfNecessary(beanBuilder, classLoader, serviceClass) {
-		def propertyFetcher = createPropertyFetcher(serviceClass)
-		def wantsProxy = wantsProxy(propertyFetcher)
-		def scope = getScope(propertyFetcher)
+		def propertyFetcher = SPU.createPropertyFetcher(serviceClass)
+		def wantsProxy = SPU.wantsProxy(propertyFetcher)
+		def scope = SPU.getScope(propertyFetcher)
 
 		if (wantsProxy) {
 			if (log.infoEnabled) {
 				log.info("service class '$serviceClass.name' DOES want a proxy")
 			}
-			if (isTransactional(propertyFetcher)) {
+			if (SPU.isTransactional(propertyFetcher)) {
 				buildTransactionalServiceProxy(beanBuilder, classLoader, serviceClass, scope)
 			} else {
 				buildServiceProxy(beanBuilder, classLoader, serviceClass)
@@ -210,7 +121,7 @@ class ScopedProxyGrailsPlugin {
 
 	static private buildServiceProxy(beanBuilder, classLoader, serviceClass) {
 		def targetBeanName = GrailsClassUtils.getPropertyName(serviceClass)
-		buildProxy(beanBuilder, classLoader, targetBeanName, serviceClass, getProxyBeanName(targetBeanName))
+		SPU.buildProxy(beanBuilder, classLoader, targetBeanName, serviceClass, SPU.getProxyBeanName(targetBeanName))
 	}
 
 	static private buildTransactionalServiceProxy(beanBuilder, classLoader, serviceClass, scope) {
@@ -241,5 +152,5 @@ class ScopedProxyGrailsPlugin {
 		buildServiceProxy(beanBuilder, classLoader, serviceClass)
 	}
 
-	private static final log = LoggerFactory.getLogger(ScopedProxyGrailsPlugin)
+	private static final log = LoggerFactory.getLogger('grails.plugin.scopedproxy.ScopedProxyGrailsPlugin')
 }
