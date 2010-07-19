@@ -81,7 +81,6 @@ class ScopedProxyGrailsPlugin {
 			}
 
 			def listeners = webXml.'listener'
-			def lastListener = listeners[listeners.size()-1]
 			listeners + {
 				'listener' {
 					'listener-class'("grails.plugin.scopedproxy.reload.session.SessionLifecycleListener")
