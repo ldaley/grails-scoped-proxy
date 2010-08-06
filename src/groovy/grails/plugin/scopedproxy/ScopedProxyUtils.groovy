@@ -123,7 +123,7 @@ class ScopedProxyUtils {
 		if (registry.containsBeanDefinition(beanName)) {
 			registry.getBeanDefinition(beanName).scope
 		} else {
-			false
+			DEFAULT_SCOPE
 		}
 	}
 	
