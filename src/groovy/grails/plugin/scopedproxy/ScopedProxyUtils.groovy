@@ -33,11 +33,14 @@ class ScopedProxyUtils {
 	static DEFAULT_SCOPE = 'singleton'
 	static NON_PROXYABLE_SCOPES = ['singleton', 'prototype'].asImmutable()
 
-	static buildProxy(beanBuilder, classLoader, targetBeanName, targetClass, proxyBeanName) {
+	static buildProxy(beanBuilder, classLoader, targetBeanName, targetClass, proxyBeanName, advices = null) {
 		beanBuilder.with {
 			"$proxyBeanName"(ClassLoaderConfigurableScopedProxyFactoryBean, targetClass) {
 				delegate.targetBeanName = targetBeanName
 				delegate.classLoader = wrapInSmartClassLoader(classLoader)
+				if (advices) {
+					delegate.advices = advices.collect { ref(it) }
+				}
 				proxyTargetClass = true
 			}
 		}

@@ -31,6 +31,7 @@ import org.springframework.beans.factory.FactoryBeanNotInitializedException
 import org.springframework.beans.factory.config.ConfigurableBeanFactory
 import org.springframework.util.ClassUtils
 import org.springframework.beans.factory.InitializingBean
+import org.aopalliance.aop.Advice
 
 /**
  * A lift of Spring's ScopedProxyFactory bean with a crucial difference, it allows
@@ -49,6 +50,8 @@ class ClassLoaderConfigurableScopedProxyFactoryBean extends ProxyConfig implemen
 
 	/** The cached singleton proxy */
 	private Object proxy
+
+	List<Advice> advices
 
 	/**
 	 * Create a new ScopedProxyFactoryBean instance.
@@ -91,6 +94,9 @@ class ClassLoaderConfigurableScopedProxyFactoryBean extends ProxyConfig implemen
 		// Add an introduction that implements only the methods on ScopedObject.
 		ScopedObject scopedObject = new DefaultScopedObject(cbf, this.scopedTargetSource.getTargetBeanName())
 		pf.addAdvice(new DelegatingIntroductionInterceptor(scopedObject))
+		for (advice in advices) {
+			pf.addAdvice advice
+		}
 
 		// Add the AopInfrastructureBean marker to indicate that the scoped proxy
 		// itself is not subject to auto-proxying! Only its target bean is.
