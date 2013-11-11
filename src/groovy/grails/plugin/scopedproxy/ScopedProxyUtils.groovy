@@ -37,7 +37,7 @@ class ScopedProxyUtils {
 		beanBuilder.with {
 			"$proxyBeanName"(ClassLoaderConfigurableScopedProxyFactoryBean, targetClass) {
 				delegate.targetBeanName = targetBeanName
-				delegate.classLoader = wrapInSmartClassLoader(classLoader)
+				delegate.classLoader = this.wrapInSmartClassLoader(classLoader)
 				if (advices) {
 					delegate.advices = advices.collect { ref(it) }
 				}
