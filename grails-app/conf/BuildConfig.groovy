@@ -25,13 +25,13 @@ grails.project.dependency.resolution = {
     repositories {        
         grailsPlugins()
         grailsHome()
-		mavenLocal()
-		grailsCentral()
-		mavenCentral()
+        mavenLocal()
+        grailsCentral()
+        mavenCentral()
     }
     dependencies {}
-	plugins {
-		build ":tomcat:7.0.47"
-		runtime ":hibernate:3.6.10.6"
-	}
+    plugins {
+        build ":tomcat:7.0.47"
+        runtime ":hibernate:3.6.10.6"
+    }
 }
