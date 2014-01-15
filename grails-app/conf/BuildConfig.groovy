@@ -17,12 +17,26 @@ grails.project.class.dir = "target/classes"
 grails.project.test.class.dir = "target/test-classes"
 grails.project.test.reports.dir = "target/test-reports"
 
+grails.project.dependency.resolver = "maven"
+
 grails.project.dependency.resolution = {
     inherits( "global" ) {}
     log "warn"
     repositories {        
         grailsPlugins()
         grailsHome()
+        mavenLocal()
+        grailsCentral()
+        mavenCentral()
     }
-    dependencies {}
+    dependencies {
+        test("org.seleniumhq.selenium:selenium-chrome-driver:2.32.0")
+        test("org.seleniumhq.selenium:selenium-firefox-driver:2.32.0")
+        test "org.gebish:geb-spock:0.9.2"
+    }
+    plugins {
+        build ":tomcat:7.0.47"
+        runtime ":hibernate:3.6.10.6"
+        test ":geb:0.9.2"
+    }
 }
