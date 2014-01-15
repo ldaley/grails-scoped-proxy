@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import grails.plugin.spock.*
-import spock.lang.*
+import spock.lang.Specification
+import spock.lang.Unroll
 
 import org.codehaus.groovy.grails.plugins.PluginManagerHolder
 import org.codehaus.groovy.grails.test.support.GrailsTestRequestEnvironmentInterceptor
 import org.springframework.transaction.interceptor.TransactionAspectSupport
 
-class ScopedProxyGrailsPluginSpec extends IntegrationSpec {
+class ScopedProxyGrailsPluginIntegrationSpec extends Specification {
 
 	static transactional = false
 	

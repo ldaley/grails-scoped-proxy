@@ -13,60 +13,59 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import spock.lang.*
-import grails.plugin.spock.*
 
+import geb.spock.GebSpec
 import org.codehaus.groovy.grails.plugins.PluginManagerHolder
 
-class ScopedProxyGrailsPluginSpec extends FunctionalSpec {
+class ScopedProxyGrailsPluginSpec extends GebSpec {
 
 	def grailsApplication
 
 	void testSessionPurgingOnReload() {
 		when: "requesting a page using the session scoped service proxy"
-		get("/sessionScopedServiceVar")
+		go("sessionScopedServiceVar")
 		then: "the request is successful"
-		response.statusCode == 200
+		title == "sessionScopedServiceVar"
 		
 		when: "the session scoped service is reloaded"
-		reload(SessionScopedService)
+		//reload(SessionScopedService)
 		and: "requesting a page using the session scoped service proxy in the same session"
-		get("/sessionScopedServiceVar")
+		go("sessionScopedServiceVar")
 		then: "the request is successful"
 		// It the session purging didn't happen, we will get a 500 
 		// here due to a ClassCastException
-		response.statusCode == 200
+		title == "sessionScopedServiceVar"
 	}
 
 	void testSessionPurgingOnReloadOfRequestScopedInsideSessionScoped() {
 		when: "requesting a page using the request proxy via the session scope"
-		get("/sessionScopedServiceVar")
-		get("/requestScopedInsideSessionVar")
+		go("sessionScopedServiceVar")
+		go("requestScopedInsideSessionVar")
 		then: "the request is successful"
-		response.statusCode == 200
-		
+		driver.pageSource == "<html><head></head><body>requestScopedInsideSessionVar: 0</body></html>"
+
 		when: "the session scoped service is reloaded"
-		reload(RequestScopedService)
+		//reload(RequestScopedService)
 		and: "requesting a page using the request proxy via the session scope"
-		get("/requestScopedInsideSessionVar")
+		go("requestScopedInsideSessionVar")
 		then: "the request is successful"
 		// It the session purging didn't happen, we will get a 500 
 		// here due to a ClassCastException
-		response.statusCode == 200
+		driver.pageSource == "<html><head></head><body>requestScopedInsideSessionVar: 0</body></html>"
 	}
 	
 	void testFilterReloadingOnReload() {
 		when: "requesting a page using the usedInFilter scoped service proxy in a filter"
-		get("/usedInFilterScopedServiceInvoker")
+		go("usedInFilterScopedServiceInvoker")
 		then: "the request is successful"
-		response.statusCode == 200
+		driver.pageSource == "<html><head></head><body>If you are seeing this after reloading UsedInFilterScopedService, you win.</body></html>"
 		
 		when: "the usedInFilter scoped service is reloaded"
-		reload(UsedInFilterScopedService)
+		//reload(UsedInFilterScopedService)
 		and: "requesting a page using the usedInFilter scoped service proxy in a filter"
-		get("/usedInFilterScopedServiceInvoker")
+		go("usedInFilterScopedServiceInvoker")
 		then: "the request is successful"
-		response.statusCode == 200
+		driver.pageSource == "<html><head></head><body>If you are seeing this after reloading UsedInFilterScopedService, you win.</body></html>"
 	}
 
 	protected reload(clazz) {
